@@ -41,10 +41,19 @@ function App() {
 
   // Core function to load a specific level
   const startLevel = async (level: number) => {
+    if (gameStatus === GameStatus.GENERATING_LEVEL) return;
+    
     setGameStatus(GameStatus.GENERATING_LEVEL);
-    const newLevel = await generateLevel(level);
-    setCubes(newLevel);
-    setGameStatus(GameStatus.PLAYING);
+    setCubes([]); // Clear immediately to avoid lingering state
+    
+    try {
+      const newLevel = await generateLevel(level);
+      setCubes(newLevel);
+      setGameStatus(GameStatus.PLAYING);
+    } catch (error) {
+      console.error("Failed to generate level", error);
+      setGameStatus(GameStatus.IDLE);
+    }
   };
 
   // Button Handlers
@@ -57,7 +66,6 @@ function App() {
   const handleNextLevel = () => {
     const nextDiff = Math.min(difficulty + 1, 10);
     setDifficulty(nextDiff);
-    // Pass nextDiff directly to avoid stale state issues
     startLevel(nextDiff);
   };
 
@@ -101,7 +109,7 @@ function App() {
       <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-8">
         
         {/* Top Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start pointer-events-auto">
           <div>
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-wider filter drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
               NEON FINGER
@@ -118,10 +126,10 @@ function App() {
           </div>
         </div>
 
-        {/* Center Prompts */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
+        {/* Center Prompts - Container is pointer-events-none to pass clicks through empty space, children are auto */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {gameStatus === GameStatus.LOADING_MODEL && (
-            <div className="flex flex-col items-center gap-4 bg-black/80 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4 bg-black/80 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-sm pointer-events-auto z-20">
               <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
               <div className="text-xl font-bold text-white">Initializing Vision...</div>
               <p className="text-gray-400 text-sm">Please allow camera access</p>
@@ -129,7 +137,7 @@ function App() {
           )}
 
           {gameStatus === GameStatus.IDLE && (
-            <div className="text-center bg-black/70 p-10 rounded-3xl border border-white/10 backdrop-blur-md">
+            <div className="text-center bg-black/70 p-10 rounded-3xl border border-white/10 backdrop-blur-md pointer-events-auto z-20">
               <h2 className="text-2xl font-bold mb-4">Ready to Play?</h2>
               <button 
                 onClick={handleStartGame}
@@ -145,7 +153,7 @@ function App() {
           )}
 
           {gameStatus === GameStatus.GENERATING_LEVEL && (
-             <div className="flex flex-col items-center gap-3 bg-black/80 p-6 rounded-xl border border-purple-500/30">
+             <div className="flex flex-col items-center gap-3 bg-black/80 p-6 rounded-xl border border-purple-500/30 pointer-events-auto z-20">
                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
                <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
                  Generating Level {difficulty}...
@@ -154,7 +162,7 @@ function App() {
           )}
 
           {gameStatus === GameStatus.GAME_OVER && (
-            <div className="text-center bg-black/80 p-10 rounded-3xl border border-green-500/30 backdrop-blur-md animate-in fade-in zoom-in duration-300">
+            <div className="text-center bg-black/80 p-10 rounded-3xl border border-green-500/30 backdrop-blur-md animate-in fade-in zoom-in duration-300 pointer-events-auto z-20">
               <h2 className="text-5xl font-bold mb-2 text-green-400 score-font">CLEARED!</h2>
               <p className="text-2xl text-white mb-8">Score: {score}</p>
               
@@ -179,7 +187,7 @@ function App() {
         </div>
 
         {/* Footer Hints */}
-        <div className="text-center text-xs text-gray-600 pb-2">
+        <div className="text-center text-xs text-gray-600 pb-2 pointer-events-auto">
            Show your full hand to the camera. Use your index finger to point.
         </div>
       </div>
